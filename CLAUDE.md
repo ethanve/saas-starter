@@ -49,36 +49,64 @@ saas-starter-template/
 
 ## Installing Dev Tools
 
-> **For the user:** Follow these steps in order. Open Terminal and run each command. If a step asks you to restart your terminal, do so before continuing.
+> **For the user:** Follow these steps in order. Open your terminal and run each command. If a step asks you to restart your terminal, do so before continuing.
+>
+> **Which terminal to use:**
+> - **macOS**: Terminal (built-in) or iTerm2
+> - **Windows**: PowerShell (run as Administrator for install steps)
 
-### 1. Homebrew (macOS package manager)
+### 1. Package manager
 
+**macOS — Homebrew:**
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
+After install, follow the instructions it prints to add Homebrew to your PATH. Restart your terminal.
 
-After install, follow the instructions it prints to add Homebrew to your PATH. Then restart your terminal.
+**Windows — winget** is built into Windows 11 (and Windows 10 1709+). Verify it works:
+```powershell
+winget --version
+```
+If not available, install "App Installer" from the Microsoft Store.
 
 ### 2. Python 3.12+
 
+**macOS:**
 ```bash
 brew install python@3.12
 ```
 
-Verify: `python3 --version` should show 3.12 or higher.
+**Windows:**
+```powershell
+winget install Python.Python.3.12
+```
+
+Restart your terminal. Verify: `python3 --version` (macOS) or `python --version` (Windows) should show 3.12+.
 
 ### 3. UV (Python package manager)
 
+**macOS / Linux:**
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://astral.sh/uv/install.ps1 | iex
 ```
 
 Restart your terminal, then verify: `uv --version`
 
 ### 4. Bun (JavaScript runtime)
 
+**macOS / Linux:**
 ```bash
 curl -fsSL https://bun.sh/install | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://bun.sh/install.ps1 | iex
 ```
 
 Restart your terminal, then verify: `bun --version`
@@ -86,42 +114,91 @@ Restart your terminal, then verify: `bun --version`
 ### 5. Docker Desktop
 
 1. Download from https://www.docker.com/products/docker-desktop/
-2. Open the downloaded `.dmg` file and drag Docker to Applications
-3. Open Docker from Applications — it will start the Docker daemon
-4. Verify in terminal: `docker --version`
+2. **macOS**: Open the `.dmg` and drag Docker to Applications
+3. **Windows**: Run the `.exe` installer. Enable WSL 2 backend when prompted. You may need to restart your PC.
+4. Open Docker Desktop — it will start the Docker daemon
+5. Verify in terminal: `docker --version`
 
-### 6. GitHub CLI
+### 6. Git
 
+**macOS:** Git comes pre-installed. Verify: `git --version`
+
+**Windows:**
+```powershell
+winget install Git.Git
+```
+Restart your terminal. During install, choose "Git from the command line and also from 3rd-party software".
+
+### 7. GitHub CLI
+
+**macOS:**
 ```bash
 brew install gh
+```
+
+**Windows:**
+```powershell
+winget install GitHub.cli
+```
+
+Then authenticate:
+```bash
 gh auth login
 ```
-
 Follow the prompts to authenticate with your GitHub account.
 
-### 7. Railway CLI
+### 8. Railway CLI
 
+**macOS:**
 ```bash
 brew install railway
-railway login
 ```
 
+**Windows:**
+```powershell
+winget install Railway.RailwayCLI
+```
+
+Then authenticate:
+```bash
+railway login
+```
 Follow the prompts to authenticate with your Railway account.
 
-### 8. Claude Code
+### 9. Node.js (needed for Claude Code install)
+
+**macOS:**
+```bash
+brew install node
+```
+
+**Windows:**
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+
+Restart your terminal, then verify: `node --version`
+
+### 10. Claude Code
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Or download from https://claude.ai/download — choose "Claude Code" for your platform.
+Or download from https://claude.ai/download — choose "Claude Code" for your platform (macOS, Windows, or Linux).
 
-### 9. gstack (Claude Code skills)
+### 11. gstack (Claude Code skills)
 
 Paste this into Claude Code and let it run:
 
+**macOS / Linux:**
 ```
 git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup
+```
+
+**Windows (PowerShell):**
+```powershell
+git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git "$env:USERPROFILE\.claude\skills\gstack"; cd "$env:USERPROFILE\.claude\skills\gstack"; .\setup
 ```
 
 This gives you `/ship`, `/review`, `/qa`, `/investigate`, `/browse`, and 20+ more skills.
@@ -130,8 +207,9 @@ This gives you `/ship`, `/review`, `/qa`, `/investigate`, `/browse`, and 20+ mor
 
 ## First-Time Setup
 
-> **For Claude:** When the user asks to "set up" or "get started", run these commands in order.
+> **For Claude:** When the user asks to "set up" or "get started", run these commands in order. Detect the user's OS and use the appropriate commands. On Windows, use PowerShell syntax (`copy` instead of `cp`, `;` instead of `&&`).
 
+**macOS / Linux:**
 ```bash
 # 1. Start PostgreSQL and Redis
 docker compose up -d
@@ -153,6 +231,28 @@ cd api && uv run pytest && cd ..
 cd web && bun run build && cd ..
 ```
 
+**Windows (PowerShell):**
+```powershell
+# 1. Start PostgreSQL and Redis
+docker compose up -d
+
+# 2. Install Python dependencies
+cd api; uv sync --all-extras; cd ..
+
+# 3. Create the .env file for the API
+copy api\.env.example api\.env
+
+# 4. Run database migrations
+cd api; uv run alembic upgrade head; cd ..
+
+# 5. Install frontend dependencies
+cd web; bun install; cd ..
+
+# 6. Verify everything works
+cd api; uv run pytest; cd ..
+cd web; bun run build; cd ..
+```
+
 If all steps pass, you're ready to develop.
 
 ---
@@ -161,8 +261,22 @@ If all steps pass, you're ready to develop.
 
 ### Starting the dev servers
 
+**macOS (with Make):**
 ```bash
 make dev
+```
+
+**Windows / any platform (without Make):**
+Open two separate terminals:
+
+Terminal 1 (API):
+```bash
+cd api && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Terminal 2 (Frontend):
+```bash
+cd web && bun run dev
 ```
 
 This starts both:
@@ -172,25 +286,27 @@ This starts both:
 ### Running just one
 
 ```bash
-make dev-api    # API only
-make dev-web    # Frontend only
+cd api && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000   # API only
+cd web && bun run dev                                                         # Frontend only
 ```
 
 ### Running tests
 
 ```bash
-make test       # Run API tests
-make lint       # Lint API code
+cd api && uv run pytest       # Run API tests
+cd api && uv run ruff check src tests   # Lint API code
 ```
 
 ### Database operations
 
 ```bash
-make migrate                    # Apply pending migrations
-make migration name="add_foo"   # Create new migration
-make db-up                      # Start PostgreSQL + Redis
-make db-down                    # Stop PostgreSQL + Redis
+cd api && uv run alembic upgrade head                          # Apply pending migrations
+cd api && uv run alembic revision --autogenerate -m "add_foo"  # Create new migration
+docker compose up -d                                            # Start PostgreSQL + Redis
+docker compose down                                             # Stop PostgreSQL + Redis
 ```
+
+> **Note:** The `Makefile` provides shortcuts for all of the above on macOS/Linux. On Windows, use the explicit commands shown above.
 
 ---
 
