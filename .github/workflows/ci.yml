@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: cd api && uv sync --all-extras
+      - run: cd api && uv run ruff check src tests
+      - run: cd api && uv run ruff format --check src tests
+
+  test-api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6381:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: cd api && uv sync --all-extras
+      - run: cd api && uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://app:app@localhost:5434/app_test
+          REDIS_URL: redis://localhost:6381
+      - run: cd api && uv run pytest
+        env:
+          DATABASE_URL: postgresql://app:app@localhost:5434/app_test
+          REDIS_URL: redis://localhost:6381
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: cd web && bun install
+      - run: cd web && bun run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
