@@ -39,20 +39,6 @@ class CORSSettings(PydanticBaseModel):
     allow_origins: list[str] = ["*"]
 
 
-class GoogleOAuthSettings(PydanticBaseModel):
-    client_id: str | None = None
-    client_secret: str | None = None
-    enabled: bool = True
-    redirect_uri: str | None = None
-
-
-class OAuthSettings(PydanticBaseModel):
-    google: GoogleOAuthSettings = Field(default_factory=GoogleOAuthSettings)
-    state_ttl_seconds: int = Field(default=600, ge=60, le=3600)
-    frontend_success_url: str = "http://localhost:3000/oauth/callback"
-    frontend_error_url: str = "http://localhost:3000/oauth/error"
-
-
 class CookieSettings(PydanticBaseModel):
     domain: str | None = None
     path: str = "/"
@@ -64,10 +50,12 @@ class CookieSettings(PydanticBaseModel):
     csrf_token_cookie_name: str = "app_csrf"
 
 
-class AuthSettings(PydanticBaseModel):
-    max_failed_login_attempts: int = Field(default=5, ge=1, le=20)
-    lockout_base_duration_minutes: int = Field(default=1, ge=1, le=60)
-    lockout_max_duration_minutes: int = Field(default=60, ge=1, le=1440)
+class EmailSettings(PydanticBaseModel):
+    resend_api_key: str | None = None
+    from_address: str = "Household <noreply@household.local>"
+    magic_link_base_url: str = "http://localhost:3000/auth/callback"
+    magic_link_ttl_minutes: int = Field(default=15, ge=1, le=120)
+    magic_link_rate_limit_per_hour: int = Field(default=5, ge=1, le=100)
 
 
 class Settings(BaseSettings):
@@ -83,9 +71,8 @@ class Settings(BaseSettings):
 
     api: APISettings = Field(default_factory=APISettings)
     cors: CORSSettings = Field(default_factory=CORSSettings)
-    oauth: OAuthSettings = Field(default_factory=OAuthSettings)
-    auth: AuthSettings = Field(default_factory=AuthSettings)
     cookie: CookieSettings = Field(default_factory=CookieSettings)
+    email: EmailSettings = Field(default_factory=EmailSettings)
 
     database_url: str | None = Field(
         default="postgresql://app:app@localhost:5434/app",

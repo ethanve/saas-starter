@@ -1,6 +1,6 @@
 """Base mixins for database models."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from nanoid import generate
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
@@ -10,17 +10,23 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 from app.core.database import Base
 
 
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
 class TimestampMixin:
     created_at: "Mapped[datetime]" = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utcnow,
         server_default=func.now(),
     )
     updated_at: "Mapped[datetime]" = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utcnow,
+        onupdate=_utcnow,
         server_default=func.now(),
-        onupdate=func.now(),
     )
 
 
@@ -42,6 +48,12 @@ class PublicIDMixin:
             raise TypeError(msg)
 
 
+class SoftDeleteMixin:
+    deleted_at: "Mapped[datetime | None]" = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+
+
 class BaseModel(Base, TimestampMixin):
     __abstract__ = True
 
@@ -52,12 +64,12 @@ class MembershipBaseModel(Base, TimestampMixin):
     __abstract__ = True
 
 
-class OrganizationScopedBaseModel(BaseModel):
+class HouseholdScopedBaseModel(BaseModel):
     __abstract__ = True
 
-    organization_id: "Mapped[int]" = mapped_column(
+    household_id: "Mapped[int]" = mapped_column(
         BigInteger,
-        ForeignKey("app_organizations.id", ondelete="CASCADE"),
+        ForeignKey("app_households.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

@@ -5,11 +5,10 @@ from typing import Annotated
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.auth.cookies import get_access_token_from_cookie
 from app.auth.jwt import verify_token
-from app.auth.models import Organization, User, UserOrganizationMembership
+from app.auth.models import User
 from app.core.database import Session
 from app.core.exceptions import AuthenticationError, AuthorizationError
 
@@ -56,27 +55,3 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
-
-
-async def get_current_user_with_org(
-    request: Request,
-    session: Session,
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
-) -> tuple[User, Organization]:
-    user = await get_current_user(request, session, credentials)
-
-    membership_result = await session.execute(
-        select(UserOrganizationMembership)
-        .where(UserOrganizationMembership.user_id == user.id)
-        .options(selectinload(UserOrganizationMembership.organization))
-        .limit(1)
-    )
-    membership = membership_result.scalar_one_or_none()
-
-    if membership is None:
-        raise AuthorizationError("User has no organization membership")
-
-    return user, membership.organization
-
-
-CurrentUserWithOrg = Annotated[tuple[User, Organization], Depends(get_current_user_with_org)]

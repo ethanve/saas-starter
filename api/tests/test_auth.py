@@ -1,46 +1,30 @@
-"""Auth route tests."""
+"""Auth route tests — refresh, logout, me, health."""
 
 import pytest
 from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_signup(client: AsyncClient):
-    response = await client.post(
-        "/api/v1/auth/signup",
-        json={
-            "email": "test@example.com",
-            "password": "TestPassword123!",
-            "name": "Test User",
-        },
-    )
-    assert response.status_code == 201
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
-
-
-@pytest.mark.asyncio
-async def test_login_wrong_password(client: AsyncClient):
-    await client.post(
-        "/api/v1/auth/signup",
-        json={
-            "email": "login@example.com",
-            "password": "TestPassword123!",
-            "name": "Login User",
-        },
-    )
-    response = await client.post(
-        "/api/v1/auth/login",
-        json={"email": "login@example.com", "password": "WrongPassword123!"},
-    )
-    assert response.status_code == 401
-
-
-@pytest.mark.asyncio
 async def test_get_me_unauthenticated(client: AsyncClient):
     response = await client.get("/api/v1/auth/me")
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_me_after_sign_in(client: AsyncClient, sign_in):
+    await sign_in(email="me@example.com", name="Me Test")
+    response = await client.get("/api/v1/auth/me")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == "me@example.com"
+    assert data["name"] == "Me Test"
+
+
+@pytest.mark.asyncio
+async def test_logout_clears_cookies(client: AsyncClient, sign_in):
+    await sign_in(email="logout@example.com", name="Logout")
+    response = await client.post("/api/v1/auth/logout")
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio

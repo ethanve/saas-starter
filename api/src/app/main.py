@@ -12,14 +12,11 @@ from starlette.responses import JSONResponse, Response
 
 from app import __version__
 from app.api import api_router
-from app.auth.oauth.client import configure_oauth
 from app.core.config import settings
 from app.core.errors import ErrorResponse
 from app.core.exceptions import AppException
 from app.core.lifespan import lifespan
 from app.core.middleware import AccessLogMiddleware, RequestContextMiddleware
-
-configure_oauth()
 
 
 async def app_error_handler(request: Request, exc: AppException) -> Response:
@@ -96,7 +93,7 @@ exception_handlers: dict[int | type[Exception], Any] = {
 }
 
 app = FastAPI(
-    title="SaaS Starter API",
+    title="Household API",
     version=__version__,
     exception_handlers=exception_handlers,
     lifespan=lifespan,
